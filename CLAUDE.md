@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-TextReader: a standalone Windows desktop app (Tkinter) that reads text aloud in English and Norwegian, targeted at accessibility use (e.g. reading schoolbooks that block text selection/copying). Four input paths: typed/pasted text, a screen-region OCR capture, a global hotkey that reads whatever is currently selected in *any* other window, and a dedicated hotkey straight to screen capture. UI is bilingual (English/Norwegian) via `app/i18n.py`.
+Norvox Reader: a standalone Windows desktop app (Tkinter) that reads text aloud in English and Norwegian, targeted at accessibility use (e.g. reading schoolbooks that block text selection/copying). Four input paths: typed/pasted text, a screen-region OCR capture, a global hotkey that reads whatever is currently selected in *any* other window, and a dedicated hotkey straight to screen capture. UI is bilingual (English/Norwegian) via `app/i18n.py`.
 
 Windows-only by design (SAPI5 speech, Win32 DPI/window APIs, `keyboard`/`pystray` Windows backends). There is no test suite and no linter configured — don't invent commands for either.
 
@@ -56,7 +56,7 @@ The GUI runs background work on separate threads (TTS engine's worker thread, OC
 
 ### Config and i18n
 
-Per-user settings live in `%APPDATA%\TextReader\config.json` (`app/config.py`); the schema is a flat dict with hardcoded defaults (`DEFAULTS`), no migration system. UI strings are a two-level dict (`STRINGS[lang][key]`) in `app/i18n.py` with a `t(key, lang)` lookup that falls back to English then to the raw key — add new UI text to *both* language blocks, not just one.
+Per-user settings live in `%APPDATA%\NorvoxReader\config.json` (`app/config.py`); the schema is a flat dict with hardcoded defaults (`DEFAULTS`), no migration system. UI strings are a two-level dict (`STRINGS[lang][key]`) in `app/i18n.py` with a `t(key, lang)` lookup that falls back to English then to the raw key — add new UI text to *both* language blocks, not just one.
 
 ### Licensing shapes what dependencies are allowed
 

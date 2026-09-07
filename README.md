@@ -1,4 +1,4 @@
-# TextReader
+# Norvox Reader
 
 A standalone Windows app that reads text out loud in **English and Norwegian**.
 The interface itself is available in both languages too.
@@ -33,7 +33,7 @@ pip install -r requirements.txt
 ### 3. Add a Norwegian voice to Windows (for Norwegian speech)
 
 Windows ships English voices by default; Norwegian needs to be added once
-per machine. TextReader has a **Settings > "Install Norwegian voice…"**
+per machine. Norvox Reader has a **Settings > "Install Norwegian voice…"**
 button that does this for you — it triggers a Windows admin-approval (UAC)
 prompt (unavoidable, only you can click that), then downloads and installs
 the voice. Approve the prompt, wait a few minutes, then click **"Refresh
@@ -78,17 +78,17 @@ python main.py
 
 ## Building a standalone .exe (optional)
 
-So you (or another user) can run TextReader without installing Python:
+So you (or another user) can run Norvox Reader without installing Python:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File build_exe.ps1
 ```
 
-This produces `dist\TextReader\TextReader.exe`. It's a folder build
+This produces `dist\Norvox Reader\Norvox Reader.exe`. It's a folder build
 (`--onedir`), not a single file — the bundled Tesseract OCR engine is
 ~175 MB, and re-extracting that on every launch (what a single-file
 `--onefile` build would do) would make startup slow. Copy or zip the whole
-`dist\TextReader` folder, not just the .exe.
+`dist\Norvox Reader` folder, not just the .exe.
 
 The Norwegian *voice* still can't be bundled this way — it's a proprietary
 Microsoft component distributed through Windows' own update mechanism, not
@@ -96,7 +96,7 @@ a file that can ship inside your app. See the in-app installer button above.
 
 ## Licensing
 
-TextReader is free, open-source software, licensed under the
+Norvox Reader is free, open-source software, licensed under the
 **GNU General Public License v2.0-or-later** — see [LICENSE](LICENSE).
 Anyone can use, modify, and redistribute it (commercially or not), as long
 as derivative works stay under the same license and the source stays
@@ -113,7 +113,7 @@ conflict with any of the above; that's a separate to-do, not yet set up.
 
 ## Notes & limitations
 
-- Closing the window minimizes TextReader to the system tray (so the global
+- Closing the window minimizes Norvox Reader to the system tray (so the global
   hotkeys keep working in the background). Use **Quit** on the tray icon's
   right-click menu to fully exit.
 - Screen-region capture works on your **primary monitor**.
@@ -124,4 +124,4 @@ conflict with any of the above; that's a separate to-do, not yet set up.
   current app blocks Ctrl+C entirely, that hotkey won't have anything to
   read — use screen capture instead.
 - Each Windows user has their own settings, stored in
-  `%APPDATA%\TextReader\config.json`.
+  `%APPDATA%\NorvoxReader\config.json`.

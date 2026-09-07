@@ -1,4 +1,4 @@
-"""TextReader entry point.
+"""Norvox Reader entry point.
 
 A standalone accessibility tool that reads text aloud in English and
 Norwegian: paste text, capture a screen region (OCR) when text can't be

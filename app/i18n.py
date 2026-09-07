@@ -2,7 +2,7 @@
 
 STRINGS = {
     "en": {
-        "app_title": "TextReader",
+        "app_title": "Norvox Reader",
         "tab_read": "Read",
         "tab_settings": "Settings",
         "paste_here": "Paste or type text here, then press Read.",
@@ -46,7 +46,7 @@ STRINGS = {
         "settings_browse": "Browse…",
         "settings_save": "Save settings",
         "settings_saved": "Settings saved.",
-        "tray_show": "Show TextReader",
+        "tray_show": "Show Norvox Reader",
         "tray_read_selection": "Read selected text",
         "tray_capture_screen": "Capture screen & read",
         "tray_quit": "Quit",
@@ -55,7 +55,7 @@ STRINGS = {
         "capture_hint": "Click and drag to select the part of the screen to read, then release the mouse. Press Esc to cancel.",
     },
     "no": {
-        "app_title": "TextReader",
+        "app_title": "Norvox Reader",
         "tab_read": "Les",
         "tab_settings": "Innstillinger",
         "paste_here": "Lim inn eller skriv tekst her, og trykk så på Les.",
@@ -99,7 +99,7 @@ STRINGS = {
         "settings_browse": "Bla gjennom…",
         "settings_save": "Lagre innstillinger",
         "settings_saved": "Innstillingene er lagret.",
-        "tray_show": "Vis TextReader",
+        "tray_show": "Vis Norvox Reader",
         "tray_read_selection": "Les markert tekst",
         "tray_capture_screen": "Fang skjerm og les",
         "tray_quit": "Avslutt",

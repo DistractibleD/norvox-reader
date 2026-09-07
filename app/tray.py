@@ -1,4 +1,4 @@
-"""System tray icon so TextReader can sit in the background: the window can
+"""System tray icon so Norvox Reader can sit in the background: the window can
 be closed while hotkeys keep working, and the tray menu gives quick access
 to the same actions.
 """
@@ -39,7 +39,7 @@ class TrayIcon:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(lambda item: t("tray_quit", self.lang), self._quit),
         )
-        self._icon = pystray.Icon("TextReader", image, "TextReader", menu)
+        self._icon = pystray.Icon("NorvoxReader", image, "Norvox Reader", menu)
         self._thread = threading.Thread(target=self._icon.run, daemon=True)
         self._thread.start()
 

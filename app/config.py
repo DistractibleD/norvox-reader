@@ -1,4 +1,4 @@
-"""Loads and saves per-user settings from %APPDATA%\\TextReader\\config.json."""
+"""Loads and saves per-user settings from %APPDATA%\\NorvoxReader\\config.json."""
 
 import json
 import os
@@ -17,7 +17,7 @@ DEFAULTS = {
 
 def _config_dir() -> str:
     base = os.environ.get("APPDATA") or os.path.expanduser("~")
-    path = os.path.join(base, "TextReader")
+    path = os.path.join(base, "NorvoxReader")
     os.makedirs(path, exist_ok=True)
     return path
 

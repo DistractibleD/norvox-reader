@@ -1,6 +1,6 @@
-# Third-party components bundled with TextReader
+# Third-party components bundled with Norvox Reader
 
-**TextReader itself is licensed under GPL-2.0-or-later** — see
+**Norvox Reader itself is licensed under GPL-2.0-or-later** — see
 [LICENSE](LICENSE). It's free, open-source software: anyone may use,
 modify, and redistribute it (including commercially), as long as
 derivative works stay under the same license and source stays available.
@@ -8,7 +8,7 @@ This page documents every third-party component it bundles.
 
 ## Why GPL-2.0-or-later specifically
 
-TextReader bundles Tesseract OCR, which pulls in `libjbig-0.dll`
+Norvox Reader bundles Tesseract OCR, which pulls in `libjbig-0.dll`
 (JBIG-KIT) — licensed **GPL-2.0-only**, confirmed against the project's own
 COPYING file and the author's FAQ:
 https://github.com/nu774/jbigkit/blob/master/COPYING,
@@ -19,7 +19,7 @@ libtiff's JBIG2 codec support.
 GPL requires that anything distributed combined with a GPL-covered
 component be licensed under compatible terms, with no extra restrictions
 layered on top. Since JBIG-KIT is GPL-2.0-*only* (not "-or-later"),
-TextReader's own license has to specifically be GPL-2.0-compatible —
+Norvox Reader's own license has to specifically be GPL-2.0-compatible —
 GPL-2.0-or-later fits and is the standard choice. This is exactly why the
 earlier plan (sell it, or give it away "free but no commercial use by
 others") didn't work: both add restrictions GPL doesn't allow. Fully free
@@ -31,7 +31,7 @@ Apache-2.0, and the Free Software Foundation's own compatibility position
 is that Apache-2.0 is GPLv3-compatible but *not* officially GPLv2-compatible
 (a patent-clause technicality). In practice this is a pre-existing
 characteristic of the official Tesseract Windows binaries themselves
-(anyone bundling them inherits it), not something specific to TextReader —
+(anyone bundling them inherits it), not something specific to Norvox Reader —
 noted here for completeness rather than as a new problem to solve.
 
 ## Python packages (see `requirements.txt` for pinned versions)
@@ -130,7 +130,7 @@ the DLL (shipping it as-is satisfies the relinking requirement).
 |---|---|---|
 | FreeType | libfreetype-6.dll | FTL (FreeType License, permissive, BSD-style with a mild attribution clause) OR GPL-2.0-only — rely on FTL |
 
-### GPL — the component that determines TextReader's own license
+### GPL — the component that determines Norvox Reader's own license
 
 | Project | DLL(s) | License |
 |---|---|---|
@@ -138,7 +138,7 @@ the DLL (shipping it as-is satisfies the relinking requirement).
 
 ## What this means practically
 
-TextReader is free, source-available, GPL-2.0-or-later software — anyone
+Norvox Reader is free, source-available, GPL-2.0-or-later software — anyone
 can use, modify, resell, or redistribute it, as long as they keep it under
 the same license terms and make source available. That's fully compatible
 with everything bundled here, including JBIG-KIT. Keep this file (and
