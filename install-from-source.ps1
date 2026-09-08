@@ -118,10 +118,14 @@ function Invoke-NorvoxInstall {
     & $venvPython -m pip install --quiet -r "$InstallDir\requirements.txt"
 
     Write-Step "Creating a Desktop shortcut..."
+    # $env:USERPROFILE\Desktop can be wrong if the Desktop folder is
+    # redirected (common under school/work policies) - ask Windows for
+    # the real location instead of assuming the default path.
+    $DesktopDir = [Environment]::GetFolderPath("Desktop")
     $launcherCreated = $false
     try {
         $shell = New-Object -ComObject WScript.Shell
-        $shortcut = $shell.CreateShortcut("$env:USERPROFILE\Desktop\Norvox Reader.lnk")
+        $shortcut = $shell.CreateShortcut("$DesktopDir\Norvox Reader.lnk")
         $shortcut.TargetPath = $venvPythonw
         $shortcut.Arguments = "main.py"
         $shortcut.WorkingDirectory = $InstallDir
@@ -139,7 +143,7 @@ function Invoke-NorvoxInstall {
                 "cd /d `"$InstallDir`"",
                 "start `"`" `"$venvPythonw`" main.py"
             )
-            Set-Content -Path "$env:USERPROFILE\Desktop\Norvox Reader.bat" -Value $batLines -Encoding ASCII
+            Set-Content -Path "$DesktopDir\Norvox Reader.bat" -Value $batLines -Encoding ASCII
             $launcherCreated = $true
         } catch {
             Write-Host "Could not create a Desktop launcher either ($($_.Exception.Message))." -ForegroundColor Yellow
