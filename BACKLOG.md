@@ -46,11 +46,16 @@ you want me to pick something up.
   need to actually test that on the school PC and find a workaround if it
   fails there.
 
+- [x] Tagged and published v0.2.0 as an actual GitHub Release
+  (https://github.com/DistractibleD/norvox-reader/releases/tag/v0.2.0)
+  with both `NorvoxReaderSetup-0.2.0.exe` and
+  `NorvoxReader-v0.2.0-portable.zip` attached as downloadable assets.
+  Pinged the "Distracted.no" website session with both direct-download
+  links so it can switch the site's CTA from "View on GitHub" to a
+  direct download.
+
 ## Planned
 
-- [ ] Ping the "Distracted.no" website session (local website project)
-  now that installers exist, so it can switch the site's CTA from "View
-  on GitHub" to a direct download and update the copy accordingly
 - [ ] Auto-update: check for new releases, prompt the user, download and
   install automatically
 
