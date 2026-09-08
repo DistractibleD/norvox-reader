@@ -112,8 +112,9 @@ function Invoke-NorvoxInstall {
         Write-Host "Failed to create the Python virtual environment. Try running this script again." -ForegroundColor Red
         return
     }
-    & "$InstallDir\venv\Scripts\python.exe" -m pip install --quiet --upgrade pip
-    & "$InstallDir\venv\Scripts\pip.exe" install --quiet -r "$InstallDir\requirements.txt"
+    $venvPython = "$InstallDir\venv\Scripts\python.exe"
+    & $venvPython -m pip install --quiet --upgrade pip
+    & $venvPython -m pip install --quiet -r "$InstallDir\requirements.txt"
 
     Write-Step "Creating a Desktop shortcut..."
     $shell = New-Object -ComObject WScript.Shell
