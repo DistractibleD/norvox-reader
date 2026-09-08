@@ -25,9 +25,34 @@ function Write-Step($msg) {
     Write-Host "==> $msg" -ForegroundColor Cyan
 }
 
+function Find-RealPython {
+    # Windows ships fake python/py stubs ("App Execution Aliases") that
+    # resolve fine via Get-Command but just print a Microsoft Store
+    # redirect message instead of running Python. Validate actual
+    # `--version` output, not just whether the command name resolves.
+    foreach ($attempt in @(
+        @{ File = "py"; Args = @("-3") },
+        @{ File = "python"; Args = @() }
+    )) {
+        try {
+            $out = & $attempt.File @($attempt.Args) "--version" 2>&1
+            if ($LASTEXITCODE -eq 0 -and "$out" -match "^Python 3") {
+                return $attempt
+            }
+        } catch {}
+    }
+    # Fall back to a direct path, bypassing PATH/alias ambiguity entirely.
+    $candidates = Get-ChildItem "$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe" -ErrorAction SilentlyContinue
+    if ($candidates) {
+        $exe = $candidates | Sort-Object FullName -Descending | Select-Object -First 1
+        return @{ File = $exe.FullName; Args = @() }
+    }
+    return $null
+}
+
 Write-Step "Checking for Python..."
-$python = Get-Command python -ErrorAction SilentlyContinue
-if (-not $python) {
+$py = Find-RealPython
+if (-not $py) {
     Write-Step "Python not found - installing via winget (no admin rights needed)..."
     $winget = Get-Command winget -ErrorAction SilentlyContinue
     if (-not $winget) {
@@ -41,6 +66,7 @@ if (-not $python) {
     Write-Host "so it can pick up the new Python installation." -ForegroundColor Yellow
     exit 0
 }
+Write-Host "Using Python: $($py.File) $($py.Args -join ' ')"
 
 Write-Step "Finding the latest Norvox Reader release..."
 $release = Invoke-RestMethod -UseBasicParsing "https://api.github.com/repos/$RepoOwner/$RepoName/releases/latest"
@@ -79,7 +105,11 @@ if ($tesseractAsset) {
 }
 
 Write-Step "Setting up a private Python environment..."
-& python -m venv "$InstallDir\venv"
+& $py.File @($py.Args) -m venv "$InstallDir\venv"
+if (-not (Test-Path "$InstallDir\venv\Scripts\python.exe")) {
+    Write-Host "Failed to create the Python virtual environment. Try running this script again." -ForegroundColor Red
+    exit 1
+}
 & "$InstallDir\venv\Scripts\python.exe" -m pip install --quiet --upgrade pip
 & "$InstallDir\venv\Scripts\pip.exe" install --quiet -r "$InstallDir\requirements.txt"
 
