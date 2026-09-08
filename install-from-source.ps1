@@ -113,22 +113,50 @@ function Invoke-NorvoxInstall {
         return
     }
     $venvPython = "$InstallDir\venv\Scripts\python.exe"
+    $venvPythonw = "$InstallDir\venv\Scripts\pythonw.exe"
     & $venvPython -m pip install --quiet --upgrade pip
     & $venvPython -m pip install --quiet -r "$InstallDir\requirements.txt"
 
     Write-Step "Creating a Desktop shortcut..."
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut("$env:USERPROFILE\Desktop\Norvox Reader.lnk")
-    $shortcut.TargetPath = "$InstallDir\venv\Scripts\pythonw.exe"
-    $shortcut.Arguments = "main.py"
-    $shortcut.WorkingDirectory = $InstallDir
-    $shortcut.Description = "Norvox Reader"
-    $shortcut.Save()
+    $launcherCreated = $false
+    try {
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut("$env:USERPROFILE\Desktop\Norvox Reader.lnk")
+        $shortcut.TargetPath = $venvPythonw
+        $shortcut.Arguments = "main.py"
+        $shortcut.WorkingDirectory = $InstallDir
+        $shortcut.Description = "Norvox Reader"
+        $shortcut.Save()
+        $launcherCreated = $true
+    } catch {
+        Write-Host "Could not create a .lnk shortcut ($($_.Exception.Message))." -ForegroundColor Yellow
+        Write-Host "Trying a plain .bat launcher instead..." -ForegroundColor Yellow
+    }
+    if (-not $launcherCreated) {
+        try {
+            $batLines = @(
+                "@echo off",
+                "cd /d `"$InstallDir`"",
+                "start `"`" `"$venvPythonw`" main.py"
+            )
+            Set-Content -Path "$env:USERPROFILE\Desktop\Norvox Reader.bat" -Value $batLines -Encoding ASCII
+            $launcherCreated = $true
+        } catch {
+            Write-Host "Could not create a Desktop launcher either ($($_.Exception.Message))." -ForegroundColor Yellow
+            Write-Host "You can still start the app by running this in PowerShell:" -ForegroundColor Yellow
+            Write-Host "  & `"$venvPythonw`" `"$InstallDir\main.py`"" -ForegroundColor Yellow
+        }
+    }
 
     Write-Step "Done! Launching Norvox Reader now..."
-    Start-Process -FilePath "$InstallDir\venv\Scripts\pythonw.exe" -ArgumentList "main.py" -WorkingDirectory $InstallDir
+    Start-Process -FilePath $venvPythonw -ArgumentList "main.py" -WorkingDirectory $InstallDir
     Write-Host ""
-    Write-Host "A 'Norvox Reader' shortcut has been added to your Desktop for next time." -ForegroundColor Green
+    if ($launcherCreated) {
+        Write-Host "A 'Norvox Reader' shortcut has been added to your Desktop for next time." -ForegroundColor Green
+    } else {
+        Write-Host "Norvox Reader is running, but no Desktop shortcut could be created." -ForegroundColor Yellow
+        Write-Host "Run this same install command again next time to start it." -ForegroundColor Yellow
+    }
 }
 
 try {
