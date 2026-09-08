@@ -69,8 +69,7 @@ you want me to pick something up.
 
 ## Planned
 
-- [ ] Auto-update: check for new releases, prompt the user, download and
-  install automatically
+(nothing right now — updates will be handled manually for now)
 
 ## Ideas / someday
 
