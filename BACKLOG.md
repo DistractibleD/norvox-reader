@@ -54,6 +54,19 @@ you want me to pick something up.
   links so it can switch the site's CTA from "View on GitHub" to a
   direct download.
 
+- [x] Third install option for PCs where both the installer and the
+  portable .exe get hard-blocked by Windows (no "Run anyway" at all -
+  confirmed happening on the target school PC, "Unblock" checkbox didn't
+  help either): `install-from-source.ps1`. Installs Python via winget
+  (which the school PC *could* run), downloads app source + a standalone
+  `vendor_tesseract.zip` from the latest GitHub release, sets up a venv,
+  and launches via `pythonw.exe` - no unsigned .exe of ours involved.
+  One-liner: `irm .../install-from-source.ps1 | iex`. Documented in
+  README. Open question: whether the same policy also blocks
+  `tesseract.exe` when launched as a subprocess (would break OCR
+  specifically even via this method) - not yet confirmed either way on
+  the actual school PC.
+
 ## Planned
 
 - [ ] Auto-update: check for new releases, prompt the user, download and

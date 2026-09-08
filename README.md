@@ -40,6 +40,37 @@ dependency are already bundled inside. The one thing neither can bundle is
 the **Norwegian voice** itself (see step 3 below) — that's a Windows
 component, not something any app installer can ship.
 
+### If neither of those will run (locked-down PCs)
+
+Some school/work PCs block unsigned `.exe` files outright — Windows
+SmartScreen shows "Windows protected your PC" with no "Run anyway" option
+at all, for both the installer and the portable `.exe`. If that happens but
+you *can* use `winget` (Windows' own package manager — try typing
+`winget install Python.Python.3.12` in a terminal to check), there's a
+third option: **`install-from-source.ps1`**. It installs Python via winget,
+downloads the app's source code straight from this GitHub repo, and runs it
+with `pythonw.exe` — no unsigned `.exe` of ours is ever executed, so it
+sails past the block that stops the other two options.
+
+Open PowerShell and run:
+
+```powershell
+irm https://raw.githubusercontent.com/DistractibleD/norvox-reader/main/install-from-source.ps1 | iex
+```
+
+This sets everything up, adds a "Norvox Reader" shortcut to your Desktop,
+and launches the app automatically — nothing else to click through. If
+Python has to be installed first, it'll ask you to close the window and run
+the command again once (so the new Python install is picked up), then it's
+fully automatic from there.
+
+One limitation: screen-capture OCR uses a separate bundled program
+(Tesseract), which is *also* unsigned. If a PC's policy blocks unrecognized
+programs at a deeper level than just SmartScreen, OCR specifically might
+not work even with this method — typed/pasted text and reading the current
+selection or page will still work regardless, since those use Windows'
+built-in speech engine directly with no extra program involved.
+
 ## Setup (running from source, for development)
 
 ### 1. Install Python
