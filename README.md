@@ -1,3 +1,5 @@
+<img src="assets/logo.svg" alt="Norvox Reader logo" width="100" height="60">
+
 # Norvox Reader
 
 **v0.2.0**
