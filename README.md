@@ -1,5 +1,7 @@
 # Norvox Reader
 
+**v0.1.0**
+
 A standalone Windows app that reads text out loud in **English and Norwegian**.
 The interface itself is available in both languages too.
 

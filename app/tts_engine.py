@@ -231,8 +231,15 @@ class TTSEngine:
 
     def _speak_chunk_interruptible(self, chunk: str, gen: int) -> None:
         self._voice.speak_async(chunk)
-        while self._voice.is_speaking():
+        # Generous safety timeout (real speech is ~150-200 wpm, i.e. well
+        # under 0.15s/char) in case SAPI status ever gets stuck, so a single
+        # bad chunk can't hang the app forever.
+        deadline = time.time() + max(10.0, len(chunk) * 0.15)
+        while not self._voice.is_done():
             if not self._still_current(gen):
+                self._voice.purge()
+                break
+            if time.time() > deadline:
                 self._voice.purge()
                 break
             time.sleep(0.02)

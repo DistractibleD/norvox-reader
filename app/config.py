@@ -10,6 +10,7 @@ DEFAULTS = {
     "voice_en": None,
     "voice_no": None,
     "hotkey_read_selection": "ctrl+alt+s",
+    "hotkey_read_page": "ctrl+alt+a",
     "hotkey_capture_screen": "ctrl+alt+d",
     "tesseract_path": "",
 }

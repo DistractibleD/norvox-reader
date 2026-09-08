@@ -8,6 +8,7 @@ import comtypes.client
 
 _SPF_ASYNC = 1
 _SPF_PURGE_BEFORE_SPEAK = 2
+_SRSE_DONE = 1
 _SRSE_IS_SPEAKING = 2
 
 _ONECORE_VOICE_CATEGORY = r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech_OneCore\Voices"
@@ -67,11 +68,17 @@ class Sapi5Voice:
     def speak_async(self, text: str):
         self.tts.Speak(text, _SPF_ASYNC)
 
-    def is_speaking(self) -> bool:
+    def is_done(self) -> bool:
+        """False while speech is starting up (a brief transient state right
+        after Speak() is called, before RunningState reports "speaking") or
+        actively playing; True once it's genuinely finished. Checking for
+        "not done" rather than "is speaking" avoids a race where polling
+        right after Speak() catches that transient startup state and wrongly
+        concludes the utterance already ended."""
         try:
-            return self.tts.Status.RunningState == _SRSE_IS_SPEAKING
+            return self.tts.Status.RunningState == _SRSE_DONE
         except Exception:
-            return False
+            return True  # fail open so a broken status read can't hang forever
 
     def purge(self):
         try:

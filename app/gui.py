@@ -2,17 +2,22 @@
 
 import shutil
 import threading
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from app.config import DEFAULTS, load, save
+from app.floating_toolbar import FloatingToolbar
 from app.hotkeys import HotkeyManager
 from app.i18n import t
+from app.monitors import get_target_monitor_rect
 from app.ocr_screen import RegionSelector, capture_and_ocr
 from app.paths import bundled_tessdata_dir, bundled_tesseract_exe, has_bundled_tesseract
-from app.selection_reader import read_current_selection
+from app.selection_reader import read_current_page, read_current_selection
 from app.tray import TrayIcon
 from app.tts_engine import TTSEngine
+from app.version import __version__
+from app.winfocus import get_foreground_window, get_root_hwnd, set_foreground_window
 
 _LANG_OVERRIDE_CODES = ["auto", "en", "no"]
 
@@ -32,15 +37,23 @@ class App:
         self.lang = self.cfg["ui_language"]
         self._current_state = "idle"
         self._voice_by_display = {}
+        self._last_external_hwnd = None
 
         self.tts = TTSEngine(rate=self.cfg["rate"], volume=self.cfg["volume"])
         self.tts.on_state_change = lambda state: self.root.after(0, self._apply_state, state)
 
         self.root = tk.Tk()
+        # Withdraw immediately, before the slower setup below (building all
+        # the UI, populating voice lists, starting the tray icon thread)
+        # runs — otherwise the window briefly flashes visible while that
+        # work happens, since Tk() shows it by default.
+        self.root.withdraw()
         self.root.title(t("app_title", self.lang))
-        self.root.geometry("760x600")
         self.root.minsize(600, 480)
         self.root.protocol("WM_DELETE_WINDOW", self._on_close_button)
+
+        self._target_monitor = get_target_monitor_rect()
+        self._place_on_target_monitor(760, 600)
 
         self.hotkeys = HotkeyManager()
         self.tray = TrayIcon(
@@ -56,10 +69,73 @@ class App:
         self.tray.set_language(self.lang)
         self.tray.start()
 
+        self.floating_toolbar = FloatingToolbar(
+            self.root,
+            on_read_selection=self._read_selection_flow,
+            on_read_page=self._read_page_flow,
+            on_pause_resume=self._on_pause_clicked,
+            on_stop=self._on_stop_clicked,
+            on_settings=self._on_toolbar_settings_clicked,
+            on_minimize=self._on_toolbar_minimize_clicked,
+            on_close=self._quit,
+            rate_var=self.rate_var,
+            on_rate_changed=self._on_rate_changed,
+        )
+        self.root.update_idletasks()
+        if self._target_monitor is not None:
+            toolbar_x = self._target_monitor["right"] - 320
+            toolbar_y = self._target_monitor["top"] + 40
+        else:
+            toolbar_x = self.root.winfo_screenwidth() - 320
+            toolbar_y = 40
+        self.floating_toolbar.set_position(toolbar_x, toolbar_y)
+        self._refresh_toolbar_texts()
+
         self._apply_state("idle")
+        self._poll_foreground_window()
+
+        # The floating toolbar is the app's primary UI; the main window
+        # (already withdrawn above) stays hidden until opened via the
+        # toolbar's settings button, the tray icon, or a hotkey.
+        self.floating_toolbar.show()
 
     def run(self):
         self.root.mainloop()
+
+    def _poll_foreground_window(self):
+        """Remembers the last non-Norvox-Reader window that had focus, so a
+        click on our own UI can restore focus there before simulating
+        Ctrl+A/Ctrl+C — see app/winfocus.py for why this is needed."""
+        try:
+            hwnd = get_foreground_window()
+            own_hwnds = {
+                get_root_hwnd(self.root.winfo_id()),
+                get_root_hwnd(self.floating_toolbar.top.winfo_id()),
+            }
+            if hwnd and hwnd not in own_hwnds:
+                self._last_external_hwnd = hwnd
+        except Exception:
+            pass
+        self.root.after(250, self._poll_foreground_window)
+
+    def _restore_external_focus(self):
+        if self._last_external_hwnd:
+            set_foreground_window(self._last_external_hwnd)
+            time.sleep(0.05)
+
+    def _place_on_target_monitor(self, width: int, height: int):
+        """Centers the main window on a secondary monitor if one is
+        connected, so the primary display stays free — otherwise centers
+        it on the primary monitor as usual."""
+        monitor = self._target_monitor
+        if monitor is None:
+            self.root.geometry(f"{width}x{height}")
+            return
+        mon_width = monitor["right"] - monitor["left"]
+        mon_height = monitor["bottom"] - monitor["top"]
+        x = monitor["left"] + max(0, (mon_width - width) // 2)
+        y = monitor["top"] + max(0, (mon_height - height) // 2)
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
 
     # ---------------------------------------------------------------- UI --
 
@@ -108,8 +184,8 @@ class App:
         action_row.pack(fill="x", pady=(6, 0))
         self.btn_capture = ttk.Button(action_row, command=self._on_capture_clicked)
         self.btn_capture.pack(side="left", padx=4)
-        self.btn_read_selection = ttk.Button(action_row, command=self._read_selection_flow)
-        self.btn_read_selection.pack(side="left", padx=4)
+        self.btn_toolbar_toggle = ttk.Button(action_row, command=self._on_toggle_toolbar_clicked)
+        self.btn_toolbar_toggle.pack(side="left", padx=4)
 
         self.hotkey_hint_var = tk.StringVar()
         ttk.Label(
@@ -147,10 +223,10 @@ class App:
         self.rate_label = ttk.Label(frame)
         self.rate_label.grid(row=4, column=0, sticky="w", **pad)
         self.rate_var = tk.IntVar(value=self.cfg["rate"])
-        ttk.Scale(frame, from_=80, to=300, orient="horizontal", variable=self.rate_var).grid(
-            row=4, column=1, sticky="we", **pad
-        )
-        ttk.Label(frame, textvariable=self.rate_var, width=5).grid(row=4, column=2, sticky="w")
+        ttk.Scale(
+            frame, from_=80, to=300, orient="horizontal", variable=self.rate_var, command=self._on_rate_changed
+        ).grid(row=4, column=1, sticky="we", **pad)
+        ttk.Label(frame, textvariable=self.rate_var, width=4).grid(row=4, column=2, sticky="w")
 
         self.volume_label = ttk.Label(frame)
         self.volume_label.grid(row=5, column=0, sticky="w", **pad)
@@ -173,23 +249,32 @@ class App:
         self.hotkey_sel_var = tk.StringVar(value=self.cfg["hotkey_read_selection"])
         ttk.Entry(frame, textvariable=self.hotkey_sel_var, width=20).grid(row=7, column=1, sticky="w", **pad)
 
+        self.hotkey_page_label = ttk.Label(frame)
+        self.hotkey_page_label.grid(row=8, column=0, sticky="w", **pad)
+        self.hotkey_page_var = tk.StringVar(value=self.cfg["hotkey_read_page"])
+        ttk.Entry(frame, textvariable=self.hotkey_page_var, width=20).grid(row=8, column=1, sticky="w", **pad)
+
         self.hotkey_cap_label = ttk.Label(frame)
-        self.hotkey_cap_label.grid(row=8, column=0, sticky="w", **pad)
+        self.hotkey_cap_label.grid(row=9, column=0, sticky="w", **pad)
         self.hotkey_cap_var = tk.StringVar(value=self.cfg["hotkey_capture_screen"])
-        ttk.Entry(frame, textvariable=self.hotkey_cap_var, width=20).grid(row=8, column=1, sticky="w", **pad)
+        ttk.Entry(frame, textvariable=self.hotkey_cap_var, width=20).grid(row=9, column=1, sticky="w", **pad)
 
         self.tess_label = ttk.Label(frame, font=("Segoe UI", 10, "bold"))
-        self.tess_label.grid(row=9, column=0, columnspan=2, sticky="w", pady=(14, 2), padx=6)
+        self.tess_label.grid(row=10, column=0, columnspan=2, sticky="w", pady=(14, 2), padx=6)
 
         self.tess_path_label = ttk.Label(frame)
-        self.tess_path_label.grid(row=10, column=0, sticky="w", **pad)
+        self.tess_path_label.grid(row=11, column=0, sticky="w", **pad)
         self.tess_path_var = tk.StringVar(value=self.cfg["tesseract_path"])
-        ttk.Entry(frame, textvariable=self.tess_path_var, width=45).grid(row=10, column=1, sticky="we", **pad)
+        ttk.Entry(frame, textvariable=self.tess_path_var, width=45).grid(row=11, column=1, sticky="we", **pad)
         self.browse_btn = ttk.Button(frame, command=self._on_browse_tesseract)
-        self.browse_btn.grid(row=10, column=2, sticky="w", padx=6)
+        self.browse_btn.grid(row=11, column=2, sticky="w", padx=6)
 
         self.save_btn = ttk.Button(frame, command=self._on_save_settings)
-        self.save_btn.grid(row=11, column=1, sticky="w", pady=(16, 4))
+        self.save_btn.grid(row=12, column=1, sticky="w", pady=(16, 4))
+
+        ttk.Label(frame, text=f"Norvox Reader v{__version__}", foreground="#999").grid(
+            row=13, column=0, columnspan=2, sticky="w", padx=6, pady=(20, 4)
+        )
 
         frame.columnconfigure(1, weight=1)
 
@@ -292,6 +377,12 @@ class App:
     def _on_read_clicked(self):
         self._start_reading()
 
+    def _on_rate_changed(self, value_str):
+        rate = int(float(value_str))
+        self.cfg["rate"] = rate
+        self.tts.set_rate(rate)
+        save(self.cfg)
+
     def _on_pause_clicked(self):
         if self._current_state == "paused":
             self.tts.resume()
@@ -316,7 +407,17 @@ class App:
             self.text_box.insert("1.0", text)
 
     def _read_selection_flow(self):
+        self._restore_external_focus()
         text = read_current_selection()
+        if not text.strip():
+            return
+        self.text_box.delete("1.0", "end")
+        self.text_box.insert("1.0", text)
+        self._start_reading(text)
+
+    def _read_page_flow(self):
+        self._restore_external_focus()
+        text = read_current_page()
         if not text.strip():
             return
         self.text_box.delete("1.0", "end")
@@ -383,9 +484,26 @@ class App:
         self.btn_pause.config(text=t("btn_resume" if is_paused else "btn_pause", self.lang))
         mapping = {"idle": "status_idle", "reading": "status_reading", "paused": "status_paused"}
         self.status_var.set(t(mapping.get(state, "status_idle"), self.lang))
+        self._refresh_toolbar_texts()
 
     def _set_status_text(self, text: str):
         self.status_var.set(text)
+
+    def _refresh_toolbar_texts(self):
+        if not hasattr(self, "floating_toolbar"):
+            return
+        self.floating_toolbar.set_paused(self._current_state == "paused")
+        self.floating_toolbar.set_tooltips(
+            t("toolbar_read", self.lang),
+            t("toolbar_page", self.lang),
+            t("toolbar_pause", self.lang),
+            t("toolbar_resume", self.lang),
+            t("toolbar_stop", self.lang),
+            t("toolbar_settings", self.lang),
+            t("toolbar_minimize", self.lang),
+            t("toolbar_close", self.lang),
+            t("toolbar_speed", self.lang),
+        )
 
     # ---------------------------------------------------------- settings --
 
@@ -398,14 +516,13 @@ class App:
             self.tess_path_var.set(path)
 
     def _on_save_settings(self):
-        self.cfg["rate"] = int(self.rate_var.get())
         self.cfg["volume"] = round(self.volume_var.get() / 100.0, 2)
         self.cfg["hotkey_read_selection"] = self.hotkey_sel_var.get().strip() or DEFAULTS["hotkey_read_selection"]
+        self.cfg["hotkey_read_page"] = self.hotkey_page_var.get().strip() or DEFAULTS["hotkey_read_page"]
         self.cfg["hotkey_capture_screen"] = self.hotkey_cap_var.get().strip() or DEFAULTS["hotkey_capture_screen"]
         self.cfg["tesseract_path"] = self.tess_path_var.get().strip()
 
         self._push_voice_selection_to_engine()
-        self.tts.set_rate(self.cfg["rate"])
         self.tts.set_volume(self.cfg["volume"])
 
         save(self.cfg)
@@ -416,6 +533,9 @@ class App:
     def _register_hotkeys(self):
         self.hotkeys.register(
             "selection", self.cfg["hotkey_read_selection"], lambda: self.root.after(0, self._read_selection_flow)
+        )
+        self.hotkeys.register(
+            "page", self.cfg["hotkey_read_page"], lambda: self.root.after(0, self._read_page_flow)
         )
         self.hotkeys.register(
             "capture", self.cfg["hotkey_capture_screen"], lambda: self.root.after(0, self._on_capture_clicked)
@@ -436,6 +556,7 @@ class App:
         self._refresh_read_tab_texts()
         self._refresh_settings_texts()
         self.tray.set_language(self.lang)
+        self._refresh_toolbar_texts()
         self._apply_state(self._current_state)
 
     def _refresh_read_tab_texts(self):
@@ -445,7 +566,7 @@ class App:
         self.btn_clear.config(text=t("btn_clear", self.lang))
         self.btn_paste.config(text=t("btn_paste", self.lang))
         self.btn_capture.config(text=t("btn_capture_screen", self.lang))
-        self.btn_read_selection.config(text=t("btn_read_selection", self.lang))
+        self.btn_toolbar_toggle.config(text=t("btn_floating_toolbar", self.lang))
         self.lang_override_label.config(text=t("lang_override_label", self.lang))
 
         current_code = self._current_lang_override() if hasattr(self, "lang_override_combo") else "auto"
@@ -456,7 +577,11 @@ class App:
         ]
         self.lang_override_combo.current(_LANG_OVERRIDE_CODES.index(current_code))
 
-        self.hotkey_hint_var.set(t("hotkey_hint", self.lang).format(hotkey=self.cfg["hotkey_read_selection"]))
+        self.hotkey_hint_var.set(
+            t("hotkey_hint", self.lang).format(
+                hotkey=self.cfg["hotkey_read_selection"], hotkey_page=self.cfg["hotkey_read_page"]
+            )
+        )
 
     def _refresh_settings_texts(self):
         self.ui_lang_label.config(text=t("settings_ui_language", self.lang))
@@ -469,6 +594,7 @@ class App:
         self.volume_label.config(text=t("settings_volume", self.lang))
         self.hotkeys_label.config(text=t("settings_hotkeys", self.lang))
         self.hotkey_sel_label.config(text=t("settings_hotkey_selection", self.lang))
+        self.hotkey_page_label.config(text=t("settings_hotkey_page", self.lang))
         self.hotkey_cap_label.config(text=t("settings_hotkey_capture", self.lang))
         self.tess_label.config(text=t("settings_tesseract", self.lang))
         self.tess_path_label.config(text=t("settings_tesseract_path", self.lang))
@@ -485,8 +611,22 @@ class App:
     def _on_close_button(self):
         if self.tray.available:
             self.root.withdraw()
+            self.floating_toolbar.show()
         else:
             self._quit()
+
+    def _on_toggle_toolbar_clicked(self):
+        if self.floating_toolbar.is_visible():
+            self.floating_toolbar.hide()
+        else:
+            self.floating_toolbar.show()
+
+    def _on_toolbar_minimize_clicked(self):
+        self.floating_toolbar.hide()
+
+    def _on_toolbar_settings_clicked(self):
+        self._show_window()
+        self.notebook.select(self.settings_tab)
 
     def _quit(self):
         try:
@@ -499,6 +639,10 @@ class App:
             pass
         try:
             self.tts.shutdown()
+        except Exception:
+            pass
+        try:
+            self.floating_toolbar.destroy()
         except Exception:
             pass
         self.root.destroy()
