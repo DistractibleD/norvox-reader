@@ -85,8 +85,8 @@ class FloatingToolbar:
 
         self.rate_scale = tk.Scale(
             speed_row,
-            from_=80,
-            to=300,
+            from_=1,
+            to=10,
             orient="horizontal",
             variable=rate_var,
             command=self._on_rate_changed,
@@ -102,7 +102,7 @@ class FloatingToolbar:
         )
         self.rate_scale.pack(side="left", fill="x", expand=True)
 
-        self.rate_display = tk.Label(speed_row, textvariable=rate_var, bg=_BG, fg=_FG, font=("Segoe UI", 8), width=3)
+        self.rate_display = tk.Label(speed_row, textvariable=rate_var, bg=_BG, fg=_FG, font=("Segoe UI", 8), width=2)
         self.rate_display.pack(side="left", padx=(4, 0))
 
         self.tip_speed = Tooltip(self.speed_icon)

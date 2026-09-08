@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Norvox Reader: a standalone Windows desktop app (Tkinter) that reads text aloud in English and Norwegian, targeted at accessibility use (e.g. reading schoolbooks that block text selection/copying). Four input paths: typed/pasted text, a screen-region OCR capture, a global hotkey that reads whatever is currently selected in *any* other window, and a dedicated hotkey straight to screen capture. UI is bilingual (English/Norwegian) via `app/i18n.py`.
+Norvox Reader: a standalone Windows desktop app (Tkinter) that reads text aloud in English and Norwegian, targeted at accessibility use (e.g. reading schoolbooks that block text selection/copying, on possibly-restricted school PCs). The app's primary UI is a small always-on-top floating toolbar (`app/floating_toolbar.py`) — the main window (`app/gui.py`'s Read/Settings tabs) starts hidden and is only opened via the toolbar's ⚙ button, the tray icon, or a hotkey; it's still where you paste/type text directly and adjust Settings. Input paths: typed/pasted text, a screen-region OCR capture, and global hotkeys that read whatever is currently selected in *any* other window or the whole focused window (Select-All-based "read this page"). UI is bilingual (English/Norwegian) via `app/i18n.py`.
 
 Windows-only by design (SAPI5 speech, Win32 DPI/window APIs, `keyboard`/`pystray` Windows backends). There is no test suite and no linter configured — don't invent commands for either.
 
@@ -20,9 +20,12 @@ Windows-only by design (SAPI5 speech, Win32 DPI/window APIs, `keyboard`/`pystray
 # Sanity-check all modules compile (closest thing to a lint check here)
 .venv\Scripts\python.exe -c "import py_compile, glob; [py_compile.compile(f, doraise=True) for f in glob.glob('app/*.py') + ['main.py']]"
 
-# Build a standalone --onedir exe (needs pyinstaller; see build_exe.ps1)
+# Build the app + both distributable packages (installer .exe and portable
+# .zip) - needs pyinstaller and Inno Setup, both auto-installed if missing
 powershell -ExecutionPolicy Bypass -File build_exe.ps1
 ```
+
+The build produces `installer_output\NorvoxReaderSetup-X.Y.Z.exe` (Inno Setup, `installer.iss` — `PrivilegesRequired=lowest`, so it needs no admin rights, critical for restricted PCs) and `dist\NorvoxReader-vX.Y.Z-portable.zip` (no installer at all, just extract and run). Version comes from `app/version.py` — bump that, not `installer.iss` directly.
 
 There's no `pytest`/`unittest` suite. Ad hoc verification during development has been done by writing small throwaway scripts that import `app.*` modules directly (e.g. instantiate `TTSEngine`, call `.list_voices()`/`.speak()`), running them via `.venv\Scripts\python.exe`, and deleting them afterward — follow that pattern rather than adding a permanent test framework unless asked.
 

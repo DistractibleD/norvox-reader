@@ -21,6 +21,22 @@ from app.winfocus import get_foreground_window, get_root_hwnd, set_foreground_wi
 
 _LANG_OVERRIDE_CODES = ["auto", "en", "no"]
 
+_RATE_MIN_WPM = 80
+_RATE_MAX_WPM = 300
+
+
+def _wpm_to_level(wpm: int) -> int:
+    """Maps a words-per-minute value onto the 1-10 speed level shown in
+    the UI. The actual TTS engine still works in WPM (see tts_engine.py /
+    sapi5.py) — this conversion happens only at the UI boundary."""
+    level = round((wpm - _RATE_MIN_WPM) / (_RATE_MAX_WPM - _RATE_MIN_WPM) * 9) + 1
+    return max(1, min(10, level))
+
+
+def _level_to_wpm(level: int) -> int:
+    wpm = _RATE_MIN_WPM + round((level - 1) / 9 * (_RATE_MAX_WPM - _RATE_MIN_WPM))
+    return max(_RATE_MIN_WPM, min(_RATE_MAX_WPM, wpm))
+
 
 def _guess_voice_lang(voice) -> str:
     hay = f"{voice.id} {voice.name}".lower()
@@ -222,11 +238,11 @@ class App:
 
         self.rate_label = ttk.Label(frame)
         self.rate_label.grid(row=4, column=0, sticky="w", **pad)
-        self.rate_var = tk.IntVar(value=self.cfg["rate"])
+        self.rate_var = tk.IntVar(value=_wpm_to_level(self.cfg["rate"]))
         ttk.Scale(
-            frame, from_=80, to=300, orient="horizontal", variable=self.rate_var, command=self._on_rate_changed
+            frame, from_=1, to=10, orient="horizontal", variable=self.rate_var, command=self._on_rate_changed
         ).grid(row=4, column=1, sticky="we", **pad)
-        ttk.Label(frame, textvariable=self.rate_var, width=4).grid(row=4, column=2, sticky="w")
+        ttk.Label(frame, textvariable=self.rate_var, width=2).grid(row=4, column=2, sticky="w")
 
         self.volume_label = ttk.Label(frame)
         self.volume_label.grid(row=5, column=0, sticky="w", **pad)
@@ -378,9 +394,10 @@ class App:
         self._start_reading()
 
     def _on_rate_changed(self, value_str):
-        rate = int(float(value_str))
-        self.cfg["rate"] = rate
-        self.tts.set_rate(rate)
+        level = int(float(value_str))
+        wpm = _level_to_wpm(level)
+        self.cfg["rate"] = wpm
+        self.tts.set_rate(wpm)
         save(self.cfg)
 
     def _on_pause_clicked(self):

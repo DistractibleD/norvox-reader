@@ -19,7 +19,26 @@ It covers four ways to get text read aloud:
 4. A dedicated hotkey (default `Ctrl+Alt+D`) jumps straight to screen
    capture from anywhere, too.
 
-## Setup
+## Download
+
+Two ready-to-run options — pick whichever suits the PC you're installing
+on (see [Releases](https://github.com/DistractibleD/norvox-reader/releases)):
+
+- **`NorvoxReaderSetup-X.Y.Z.exe`** — a normal installer with a Start Menu
+  shortcut and an uninstaller. It's still a "real" installer, just one
+  that **needs no administrator rights at all** — it installs to your own
+  user folder and never triggers a UAC prompt. Good default choice.
+- **`NorvoxReader-vX.Y.Z-portable.zip`** — no installer whatsoever. Extract
+  it anywhere you have write access (Desktop, a USB stick, etc.) and run
+  `Norvox Reader.exe` inside. Use this on a machine where even running an
+  installer is restricted (e.g. some school/work PCs).
+
+Both include everything needed to run — Tesseract OCR and every Python
+dependency are already bundled inside. The one thing neither can bundle is
+the **Norwegian voice** itself (see step 3 below) — that's a Windows
+component, not something any app installer can ship.
+
+## Setup (running from source, for development)
 
 ### 1. Install Python
 
@@ -78,19 +97,21 @@ won't make a voice appear). This is exactly what the in-app button runs.
 python main.py
 ```
 
-## Building a standalone .exe (optional)
-
-So you (or another user) can run Norvox Reader without installing Python:
+## Building the distributable installer/zip yourself
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File build_exe.ps1
 ```
 
-This produces `dist\Norvox Reader\Norvox Reader.exe`. It's a folder build
-(`--onedir`), not a single file — the bundled Tesseract OCR engine is
-~175 MB, and re-extracting that on every launch (what a single-file
-`--onefile` build would do) would make startup slow. Copy or zip the whole
-`dist\Norvox Reader` folder, not just the .exe.
+This builds the app (via PyInstaller, `--onedir` — a folder, not
+`--onefile`, since re-extracting the ~175 MB bundled Tesseract on every
+launch would make startup slow), then packages it two ways:
+
+- `installer_output\NorvoxReaderSetup-X.Y.Z.exe` — built with
+  [Inno Setup](https://jrsoftware.org/isinfo.php) (installed automatically
+  via `winget` if missing). See `installer.iss` — `PrivilegesRequired=lowest`
+  is the key setting that keeps it admin-free.
+- `dist\NorvoxReader-vX.Y.Z-portable.zip` — just a zip of the built folder.
 
 The Norwegian *voice* still can't be bundled this way — it's a proprietary
 Microsoft component distributed through Windows' own update mechanism, not

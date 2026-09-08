@@ -23,19 +23,34 @@ you want me to pick something up.
   toolbar, hotkeys, or tray) — pasting text and hitting Read still works
   there as before.
 
+- [x] Toolbar's ✕ now fully closes the program; added a separate small
+  "minimize to tray" (−) button on the toolbar for the old ✕ behavior
+- [x] Fixed the main window briefly flashing visible on every startup
+  (it's created and shown by Tk by default, then all the slow setup work
+  used to run before we hid it again — now withdrawn immediately)
+- [x] Added version tracking (`app/version.py`, shown in Settings) and
+  pushed the first tagged release, v0.1.0, to GitHub
+
+- [x] Speed slider now shows 1-10 on both the toolbar and Settings,
+  instead of raw words-per-minute (~80-300) — the TTS engine still works
+  in WPM internally, only the displayed number changed
+
+- [x] Two ready-to-run distribution options, both bundling everything
+  needed (no separate Python/Tesseract installs): a no-admin-required
+  Inno Setup installer (`installer.iss`, `PrivilegesRequired=lowest` —
+  installs per-user, no UAC prompt, verified via a real silent-install
+  test) and a plain portable .zip (no installer logic at all, for PCs
+  where even running an installer is restricted). Both built by
+  `build_exe.ps1` in one pass. The Norwegian *voice* still can't be
+  bundled either way — it's a Windows component, not ours to ship — still
+  need to actually test that on the school PC and find a workaround if it
+  fails there.
+
 ## Planned
 
-- [ ] Toolbar's ✕ should fully close the program (it currently just hides
-  the toolbar); add a separate small "minimize to tray" button on the
-  toolbar for the current ✕ behavior instead
-- [ ] Change the speed slider's displayed numbers from raw words-per-minute
-  (currently ~80-300) to a simpler 1-10 scale, on both the toolbar and
-  Settings
-- [ ] Single-file .exe installer for easier download/install (currently
-  builds as a `--onedir` folder — see build_exe.ps1 and the note in
-  README's "Building a standalone .exe" section for why; needs a real
-  installer tool like Inno Setup rather than just switching PyInstaller
-  modes, to avoid a slow re-extracting single-file build)
+- [ ] Ping the "Distracted.no" website session (local website project)
+  now that installers exist, so it can switch the site's CTA from "View
+  on GitHub" to a direct download and update the copy accordingly
 - [ ] Auto-update: check for new releases, prompt the user, download and
   install automatically
 
